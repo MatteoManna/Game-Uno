@@ -251,23 +251,32 @@ export default function Game() {
     }
   }, [currentPlayer, p2, handleClickCard, pickCard, currentCard]);
 
-  useEffect(() => {
-    if (p1.length === 0) {
-      setIsStarted(false);
-    }
-  }, [p1]);
+  // If somebody wins
+  if (isStarted && (p1.length === 0 || p2.length === 0)) {
+    return (
+      <Container className="py-5">
+        <Button onClick={handleClickStart} className="mb-4">
+          Restart
+        </Button>
+        {p1.length === 0 &&
+          <h1 className="text-success">You win!</h1>
+        }
+        {p2.length === 0 &&
+          <h1 className="text-danger">Guest wins!</h1>
+        }
+      </Container>
+    )
+  }
 
   return (
     <>
       <Container className="py-3">
-        <div>
-          <Button
-            variant={isStarted ? 'danger' : 'primary'}
-            onClick={handleClickStart}
-          >
-            {isStarted ? 'Restart' : 'Start'}
-          </Button>
-        </div>
+        <Button
+          variant={isStarted ? 'danger' : 'primary'}
+          onClick={handleClickStart}
+        >
+          {isStarted ? 'Restart' : 'Start'}
+        </Button>
         {isStarted &&
           <>
             {[p1, p2].map((player, key1) => (
@@ -292,7 +301,7 @@ export default function Game() {
                       index={key2}
                       onClick={key1 === 0 && isMyTurn ? handleClickCard : undefined}
                       card={item}
-                      //isHidden={key1 > 0}
+                      isHidden={key1 > 0}
                     />
                   ))}
                 </div>
