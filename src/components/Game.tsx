@@ -179,7 +179,7 @@ export default function Game() {
             )
           });
         } else {
-          // Iteration of guest cards
+          // Iteration of computer cards
           for (let i = 0; i < p2.length; i++) {
             // Get color of current card
             const cardColor = p2[i].color;
@@ -205,7 +205,7 @@ export default function Game() {
         }
       }
 
-      // If not "stop" or "reverse" play guest
+      // If not "stop" or "reverse" play computer
       if (typeof value === 'number' || (typeof value === 'string' && !['stop', 'reverse'].includes(value))) {
         // Change player
         changePlayer();
@@ -262,7 +262,7 @@ export default function Game() {
           <h1 className="text-success">You win!</h1>
         }
         {p2.length === 0 &&
-          <h1 className="text-danger">Guest wins!</h1>
+          <h1 className="text-danger">Computer wins!</h1>
         }
       </Container>
     )
@@ -279,10 +279,18 @@ export default function Game() {
         </Button>
         {isStarted &&
           <>
+            {currentCard &&
+              <div className="mt-4">
+                <h3>Deck</h3>
+                <Card
+                  card={currentCard}
+                />
+              </div>
+            }
             {[p1, p2].map((player, key1) => (
               <div key={key1} className="mt-4">
                 <div className="d-flex align-items-cente mb-2">
-                  <h3 className="mb-0">Player {key1 + 1}</h3>
+                  <h3 className="mb-0">Player {key1 + 1} ({key1 === 0 ? 'you' : 'computer'})</h3>
                   {key1 === 0 &&
                     <Button
                       onClick={handleClickPickCard('p1')}
@@ -307,14 +315,6 @@ export default function Game() {
                 </div>
               </div>
             ))}
-            {currentCard &&
-              <div className="mt-4">
-                <h3>Deck</h3>
-                <Card
-                  card={currentCard}
-                />
-              </div>
-            }
           </>
         }
       </Container>
