@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Container, Button, Modal } from 'react-bootstrap';
+import { Container, Button, Modal, Badge } from 'react-bootstrap';
 
 // Types
 import { Players, PlayerKey } from '../types/players';
@@ -226,9 +226,36 @@ export default function Game() {
 
   // Handle pick card by player
   const handleClickPickCard = (player: PlayerKey) => () => pickCard(player);
+
+  // Handle click restart
+  const handleClickRestart = () => setModal({
+    isActive: true,
+    canClose: true,
+    title: 'Are you sure!?',
+    content: (
+      <>
+        <p>You will lose this game data and nothing will be saved.</p>
+        <div className="text-center">
+          <Button onClick={handleClickModalRestart} variant="danger">Yes, restart</Button>
+        </div>
+      </>
+    )
+  });
+
+  // Click restart by modal
+  const handleClickModalRestart = () => {
+    // Restart the game
+    handleClickStart();
+
+    // Close the modal
+    setModal(prev => ({
+      ...prev,
+      isActive: false
+    }));
+  };
   
   useEffect(() => {
-    if (currentPlayer === 'p2') {
+    if (currentPlayer === 'p2' && (p1.length > 0 || p2.length > 0)) {
       for (let i = 0; i < p2.length; i++) {
         // Check if is valid move
         const isValidMove = handleClickCard(p2[i], i, currentPlayer);
@@ -246,13 +273,30 @@ export default function Game() {
         }
       }
     }
-  }, [currentPlayer, p2, handleClickCard, pickCard, currentCard]);
+  }, [currentPlayer, p1, p2, handleClickCard, pickCard, currentCard]);
+
+  // Start
+  if (!isStarted) {
+    return (
+      <Container className="py-3">
+        <Button
+          onClick={handleClickStart}
+          className="mb-4"
+        >
+          Start
+        </Button>
+      </Container>
+    );
+  }
 
   // If somebody wins
   if (isStarted && (p1.length === 0 || p2.length === 0)) {
     return (
-      <Container className="py-5">
-        <Button onClick={handleClickStart} className="mb-4">
+      <Container className="py-3">
+        <Button
+          onClick={handleClickStart}
+          className="mb-4"
+        >
           Restart
         </Button>
         {p1.length === 0 &&
@@ -262,58 +306,61 @@ export default function Game() {
           <h1 className="text-danger">Computer wins!</h1>
         }
       </Container>
-    )
+    );
   }
 
   return (
     <>
       <Container className="py-3">
-        <Button
-          variant={isStarted ? 'danger' : 'primary'}
-          onClick={handleClickStart}
-        >
-          {isStarted ? 'Restart' : 'Start'}
-        </Button>
-        {isStarted &&
-          <>
-            {currentCard &&
-              <div className="mt-4">
-                <h3>Deck</h3>
+        <div>
+          <div className="d-flex align-items-center justify-content-between mb-2">
+            <h3 className="mb-0">Deck</h3>
+            <Button
+              onClick={handleClickRestart}
+              variant="danger"
+            >
+              Restart
+            </Button>
+          </div>
+          {currentCard &&
+            <Card
+              card={currentCard}
+            />
+          }
+        </div>
+        {[p1, p2].map((cards, key1) => (
+          <div key={key1} className="mt-4">
+            <div className="d-flex align-items-center mb-2">
+              <h3 className="mb-0">Player {key1 + 1} ({key1 === 0 ? 'you' : 'computer'})</h3>
+              {cards.length === 1 &&
+                <Badge bg="danger" className="text-uppercase ms-3">
+                  Uno!
+                </Badge>
+              }
+              {key1 === 0 &&
+                <Button
+                  onClick={handleClickPickCard('p1')}
+                  size="sm"
+                  className="ms-3"
+                  disabled={!isMyTurn}
+                >
+                  Pick card
+                </Button>
+              }
+            </div>
+            <div className="d-flex flex-wrap gap-1">
+              {cards.map((item, key2) => (
                 <Card
-                  card={currentCard}
+                  key={key2}
+                  index={key2}
+                  onClick={key1 === 0 && isMyTurn ? handleClickCard : undefined}
+                  card={item}
+                  isHidden={key1 > 0}
                 />
-              </div>
-            }
-            {[p1, p2].map((player, key1) => (
-              <div key={key1} className="mt-4">
-                <div className="d-flex align-items-cente mb-2">
-                  <h3 className="mb-0">Player {key1 + 1} ({key1 === 0 ? 'you' : 'computer'})</h3>
-                  {key1 === 0 &&
-                    <Button
-                      onClick={handleClickPickCard('p1')}
-                      size="sm"
-                      className="ms-3"
-                      disabled={!isMyTurn}
-                    >
-                      Pick card
-                    </Button>
-                  }
-                </div>
-                <div className="d-flex flex-wrap gap-1">
-                  {player.map((item, key2) => (
-                    <Card
-                      key={key2}
-                      index={key2}
-                      onClick={key1 === 0 && isMyTurn ? handleClickCard : undefined}
-                      card={item}
-                      isHidden={key1 > 0}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </>
-        }
+              ))}
+            </div>
+          </div>
+        ))}
       </Container>
       <Modal
         show={modal.isActive}
