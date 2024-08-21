@@ -57,13 +57,10 @@ export default function Game() {
   const { availableCards, currentCard } = deck;
 
   // Change player
-  const changePlayer = () => {
-    
-    setPlayers(prev => ({
-      ...prev,
-      currentPlayer: prev.currentPlayer === 'p1' ? 'p2' : 'p1'
-    }));
-  };
+  const changePlayer = () => setPlayers(prev => ({
+    ...prev,
+    currentPlayer: prev.currentPlayer === 'p1' ? 'p2' : 'p1'
+  }));
 
   // Pick card by player
   const pickCard = useCallback((player: PlayerKey, cardCount = 1) => {
@@ -86,6 +83,27 @@ export default function Game() {
     // Change player
     changePlayer();
   }, [availableCards]);
+
+  // Change color
+  const changeColor = useCallback((color: CardColor) => {
+    // Set clicked color
+    setDeck(prev => ({
+      ...prev,
+      currentCard: {
+        value: prev.currentCard?.value ?? 'changeColor',
+        color: color
+      }
+    }));
+
+    // Close modal
+    setModal(prev => ({
+      ...prev,
+      isActive: false
+    }));
+
+    // Change player
+    changePlayer();
+  }, []);
 
   // Click start
   const handleClickStart = () => {
@@ -114,27 +132,6 @@ export default function Game() {
       currentCard: currentCard[0]
     });
   };
-
-  // Change color
-  const changeColor = useCallback((color: CardColor) => {
-    // Set clicked color
-    setDeck(prev => ({
-      ...prev,
-      currentCard: {
-        value: prev.currentCard?.value ?? 'changeColor',
-        color: color
-      }
-    }));
-
-    // Close modal
-    setModal(prev => ({
-      ...prev,
-      isActive: false
-    }));
-
-    // Change player
-    changePlayer();
-  }, []);
 
   // Handle click change color
   const handleChangeColor = useCallback((color: CardColor) => () => changeColor(color), [changeColor]);
@@ -237,7 +234,7 @@ export default function Game() {
         const isValidMove = handleClickCard(p2[i], i, currentPlayer);
 
         if (isValidMove) {
-          console.log('current', currentCard, 'analyzed', p2[i]);
+          console.log('current', currentCard, 'analyzed card', p2[i]);
         }
         
         // If is valid move stop
