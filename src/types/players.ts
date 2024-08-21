@@ -6,4 +6,5 @@ export interface Players {
   p1: Card[];
   p2: Card[];
   currentPlayer: PlayerKey;
+  canPickCard: boolean;
 }

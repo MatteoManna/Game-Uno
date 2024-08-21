@@ -9,7 +9,7 @@ import { ModalProps } from '../types/modal';
 
 // Utils
 import { cards, cardColors } from '../utils/cards';
-import { isValidMove } from '../utils/validations';
+import { isValidMove, isActiveNoMove } from '../utils/validations';
 
 // Components
 import Card from './Card';
@@ -42,9 +42,10 @@ export default function Game() {
   const [players, setPlayers] = useState<Players>({
     p1: [],
     p2: [],
-    currentPlayer: 'p1'
+    currentPlayer: 'p1',
+    canPickCard: true
   });
-  const { p1, p2, currentPlayer } = players;
+  const { p1, p2, currentPlayer, canPickCard } = players;
 
   // Bool if turn is mine
   const isMyTurn = currentPlayer === 'p1';
@@ -59,7 +60,8 @@ export default function Game() {
   // Change player
   const changePlayer = () => setPlayers(prev => ({
     ...prev,
-    currentPlayer: prev.currentPlayer === 'p1' ? 'p2' : 'p1'
+    currentPlayer: prev.currentPlayer === 'p1' ? 'p2' : 'p1',
+    canPickCard: true
   }));
 
   // Pick card by player
@@ -70,7 +72,8 @@ export default function Game() {
     // Set player
     setPlayers(prev => ({
       ...prev,
-      [player]: prev[player].concat(pickedCard)
+      [player]: prev[player].concat(pickedCard),
+      canPickCard: false
     }));
 
     // Set deck
@@ -81,7 +84,7 @@ export default function Game() {
     }));
 
     // Change player
-    changePlayer();
+    //changePlayer();
   }, [availableCards]);
 
   // Change color
@@ -270,6 +273,7 @@ export default function Game() {
         } else if (i === p2.length - 1) {
           // Pick card
           pickCard(currentPlayer, 1);
+          changePlayer();
         }
       }
     }
@@ -338,14 +342,24 @@ export default function Game() {
                 </Badge>
               }
               {key1 === 0 &&
-                <Button
-                  onClick={handleClickPickCard('p1')}
-                  size="sm"
-                  className="ms-3"
-                  disabled={!isMyTurn}
-                >
-                  Pick card
-                </Button>
+                <>
+                  <Button
+                    onClick={handleClickPickCard('p1')}
+                    size="sm"
+                    className="ms-3"
+                    disabled={!isMyTurn || !canPickCard}
+                  >
+                    Pick card
+                  </Button>
+                  <Button
+                    onClick={() => changePlayer()}
+                    size="sm"
+                    className="ms-1"
+                    disabled={!isMyTurn || canPickCard || (currentCard && !isActiveNoMove(p1, currentCard))}
+                  >
+                    No move
+                  </Button>
+                </>
               }
             </div>
             <div className="d-flex flex-wrap gap-1">
