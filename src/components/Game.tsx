@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Container, Button, Modal, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Button, Modal, Badge } from 'react-bootstrap';
 
 // Types
 import { Players, PlayerKey } from '../types/players';
@@ -55,6 +55,7 @@ export default function Game() {
     availableCards: [],
     notAvailableCards: []
   });
+  //const { availableCards, notAvailableCards, currentCard } = deck;
   const { availableCards, currentCard } = deck;
 
   // Change player
@@ -89,6 +90,9 @@ export default function Game() {
 
   // Change color
   const changeColor = useCallback((color: CardColor) => {
+    // Change player
+    changePlayer();
+
     // Set clicked color
     setDeck(prev => ({
       ...prev,
@@ -103,9 +107,6 @@ export default function Game() {
       ...prev,
       isActive: false
     }));
-
-    // Change player
-    changePlayer();
   }, []);
 
   // Click start
@@ -188,6 +189,7 @@ export default function Game() {
             if (cardColor) {
               // Change color and break the loop
               changeColor(cardColor);
+              changePlayer();
               break;
             }
           }
@@ -196,13 +198,14 @@ export default function Game() {
 
       // If "+2" or "+4"
       if (typeof value === 'string' && ['+2', '+4'].includes(value)) {
-        pickCard(player === 'p1' ? 'p2' : 'p1', value === '+2' ? 2 : 4);
-
         // If "+2" change turn
         if (value === '+2') {
           // Change player
           changePlayer();
         }
+
+        // Pick
+        pickCard(player === 'p1' ? 'p2' : 'p1', value === '+2' ? 2 : 4);
       }
 
       // If not "stop" or "reverse" play computer
@@ -316,22 +319,38 @@ export default function Game() {
   return (
     <>
       <Container className="py-3">
-        <div>
-          <div className="d-flex align-items-center justify-content-between mb-2">
-            <h3 className="mb-0">Deck</h3>
-            <Button
-              onClick={handleClickRestart}
-              variant="danger"
-            >
-              Restart
-            </Button>
-          </div>
-          {currentCard &&
-            <Card
-              card={currentCard}
-            />
-          }
+        <div className="text-end">
+          <Button
+            onClick={handleClickRestart}
+            variant="danger"
+          >
+            Restart
+          </Button>
         </div>
+        <Row>
+          <Col lg={6}>
+            <h3>Deck</h3>
+            {currentCard &&
+              <Card
+                card={currentCard}
+              />
+            }
+          </Col>
+          {/*
+          <Col lg={6}>
+            <h3>Latest 3 cards</h3>
+            <div className="d-flex">
+              {notAvailableCards.slice(-4, -1).map((card, key) => (
+                <Card
+                  key={key}
+                  card={card}
+                  isDeck
+                />
+              ))}
+            </div>
+          </Col>
+          */}
+        </Row>
         {[p1, p2].map((cards, key1) => (
           <div key={key1} className="mt-4">
             <div className="d-flex align-items-center mb-2">
