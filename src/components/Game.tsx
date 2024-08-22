@@ -8,23 +8,12 @@ import { CardColor, Card as CardProps } from '../types/card';
 import { ModalProps } from '../types/modal';
 
 // Utils
-import { cards, cardColors } from '../utils/cards';
+import { cards, cardColors, shuffleCards } from '../utils/cards';
 import { isValidMove, isActiveNoMove } from '../utils/validations';
+import { getNewPlayer } from '../utils/players';
 
 // Components
 import Card from './Card';
-
-// Shuffle cards
-const shuffleCards = (array: CardProps[]) => {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-
-  if (typeof array.slice(14, 15)[0].value !== 'number') {
-    shuffleCards(array);
-  }
-};
 
 export default function Game() {
   // Modal
@@ -52,41 +41,35 @@ export default function Game() {
 
   // Deck
   const [deck, setDeck] = useState<Deck>({
-    availableCards: [],
-    notAvailableCards: []
+    availableCards: []
   });
-  //const { availableCards, notAvailableCards, currentCard } = deck;
-  const { availableCards, currentCard } = deck;
+  const { availableCards, releasedCards, currentCard } = deck;
 
   // Change player
   const changePlayer = () => setPlayers(prev => ({
     ...prev,
-    currentPlayer: prev.currentPlayer === 'p1' ? 'p2' : 'p1',
+    currentPlayer: getNewPlayer(prev.currentPlayer),
     canPickCard: true
   }));
 
   // Pick card by player
   const pickCard = useCallback((player: PlayerKey, cardCount = 1) => {
-    // Get first card of available cards
-    const pickedCard = availableCards.slice(0, cardCount);
-
     // Set player
     setPlayers(prev => ({
       ...prev,
-      [player]: prev[player].concat(pickedCard),
+      [player]: prev[player].concat(availableCards.slice(0, cardCount)),
       canPickCard: false
     }));
 
     // Set deck
     setDeck(prev => ({
       ...prev,
-      availableCards: prev.availableCards.filter((_, key) => key > cardCount - 1),
-      notAvailableCards: prev.notAvailableCards.concat(pickedCard)
+      availableCards: prev.availableCards.filter((_, key) => key > cardCount - 1)
     }));
-
-    // Change player
-    //changePlayer();
   }, [availableCards]);
+
+  // Handle pick card by player
+  const handleClickPickCard = (player: PlayerKey) => () => pickCard(player);
 
   // Change color
   const changeColor = useCallback((color: CardColor) => {
@@ -109,39 +92,11 @@ export default function Game() {
     }));
   }, []);
 
-  // Click start
-  const handleClickStart = () => {
-    // Set the game is started
-    setIsStarted(true);
-
-    // Shuffle cards
-    shuffleCards(cards);
-
-    // Set cards of p1, p2 and current card
-    const p1Cards = cards.slice(0, 7);
-    const p2Cards = cards.slice(7, 14);
-    const currentCard = cards.slice(14, 15);
-
-    // Set players
-    setPlayers(prev => ({
-      ...prev,
-      p1: p1Cards,
-      p2: p2Cards
-    }));
-
-    // Set deck
-    setDeck({
-      availableCards: cards.slice(15, cards.length),
-      notAvailableCards: p1Cards.concat(p2Cards).concat(currentCard),
-      currentCard: currentCard[0]
-    });
-  };
-
   // Handle click change color
   const handleChangeColor = useCallback((color: CardColor) => () => changeColor(color), [changeColor]);
 
   // Click card
-  const handleClickCard = useCallback((card: CardProps, index: number, player: PlayerKey) => {
+  const clickCard = useCallback((card: CardProps, index: number, player: PlayerKey) => {
     const { value } = card;
 
     if (currentCard && isValidMove(card, currentCard)) {
@@ -154,8 +109,8 @@ export default function Game() {
       // Set deck
       setDeck(prev => ({
         ...prev,
-        notAvailableCards: prev.notAvailableCards.concat(card),
-        currentCard: card
+        currentCard: card,
+        releasedCards: prev.releasedCards?.concat(card) ?? [card]
       }));
 
       // If "change color" or "+4"
@@ -198,21 +153,15 @@ export default function Game() {
 
       // If "+2" or "+4"
       if (typeof value === 'string' && ['+2', '+4'].includes(value)) {
-        // If "+2" change turn
-        if (value === '+2') {
-          // Change player
-          changePlayer();
-        }
+        // If "+2" change player
+        if (value === '+2') changePlayer();
 
         // Pick
-        pickCard(player === 'p1' ? 'p2' : 'p1', value === '+2' ? 2 : 4);
+        pickCard(getNewPlayer(player), value === '+2' ? 2 : 4);
       }
 
-      // If not "stop" or "reverse" play computer
-      if (typeof value === 'number' || (typeof value === 'string' && !['stop', 'reverse'].includes(value))) {
-        // Change player
-        changePlayer();
-      }
+      // If not "stop" or "reverse" or "changeColor" change player
+      if (typeof value === 'number' || (typeof value === 'string' && !['stop', 'reverse', 'changeColor'].includes(value))) changePlayer();
 
       return true;
     }
@@ -230,8 +179,30 @@ export default function Game() {
     return false;
   }, [currentCard, handleChangeColor, changeColor, isMyTurn, pickCard, p2]);
 
-  // Handle pick card by player
-  const handleClickPickCard = (player: PlayerKey) => () => pickCard(player);
+  // Handle click card
+  const handleClickCard = (card: CardProps, index: number, player: PlayerKey) => clickCard(card, index, player);
+
+  // Click start
+  const handleClickStart = () => {
+    // Set the game is started
+    setIsStarted(true);
+
+    // Shuffle cards
+    shuffleCards(cards);
+
+    // Set players
+    setPlayers(prev => ({
+      ...prev,
+      p1: cards.slice(0, 7),
+      p2: cards.slice(7, 14)
+    }));
+
+    // Set deck
+    setDeck({
+      availableCards: cards.slice(15, cards.length),
+      currentCard: cards.slice(14, 15)[0]
+    });
+  };
 
   // Handle click restart
   const handleClickRestart = () => setModal({
@@ -262,25 +233,23 @@ export default function Game() {
   
   useEffect(() => {
     if (currentPlayer === 'p2' && (p1.length > 0 || p2.length > 0)) {
+      // Iterate computer cards
       for (let i = 0; i < p2.length; i++) {
         // Check if is valid move
-        const isValidMove = handleClickCard(p2[i], i, currentPlayer);
-
-        if (isValidMove) {
-          console.log('current', currentCard, 'analyzed card', p2[i]);
-        }
+        const isValidMove = clickCard(p2[i], i, 'p2');
         
         // If is valid move stop
         if (isValidMove) {
+          console.log('current', currentCard, 'analyzed card', p2[i]);
           break;
+        // If not valid move and it's the last card pick card and change player
         } else if (i === p2.length - 1) {
-          // Pick card
           pickCard(currentPlayer, 1);
           changePlayer();
         }
       }
     }
-  }, [currentPlayer, p1, p2, handleClickCard, pickCard, currentCard]);
+  }, [currentPlayer, p1.length, p2, clickCard, pickCard, currentCard]);
 
   // Start
   if (!isStarted) {
@@ -336,20 +305,20 @@ export default function Game() {
               />
             }
           </Col>
-          {/*
-          <Col lg={6}>
-            <h3>Latest 3 cards</h3>
-            <div className="d-flex">
-              {notAvailableCards.slice(-4, -1).map((card, key) => (
-                <Card
-                  key={key}
-                  card={card}
-                  isDeck
-                />
-              ))}
-            </div>
-          </Col>
-          */}
+          {releasedCards && releasedCards.length > 1 &&
+            <Col lg={6} className="mt-3 mt-lg-0">
+              <h3>Latest 5 released cards</h3>
+              <div className="d-flex">
+                {releasedCards.slice(-6, -1).map((card, key) => (
+                  <Card
+                    key={key}
+                    card={card}
+                    isDeck
+                  />
+                ))}
+              </div>
+            </Col>
+          }
         </Row>
         {[p1, p2].map((cards, key1) => (
           <div key={key1} className="mt-4">
@@ -389,6 +358,7 @@ export default function Game() {
                   onClick={key1 === 0 && isMyTurn ? handleClickCard : undefined}
                   card={item}
                   isHidden={key1 > 0}
+                  isDeck={key1 > 0}
                 />
               ))}
             </div>

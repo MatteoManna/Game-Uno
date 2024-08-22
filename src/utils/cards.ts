@@ -428,3 +428,15 @@ export const cards: Card[] = [
     color: 'red'
   }
 ];
+
+// Shuffle cards
+export const shuffleCards = (array: Card[]) => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+
+  if (typeof array.slice(14, 15)[0].value !== 'number') {
+    shuffleCards(array);
+  }
+};
