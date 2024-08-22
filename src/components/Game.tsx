@@ -22,7 +22,7 @@ export default function Game() {
     canClose: true,
     title: '',
     content: ''
-  })
+  });
 
   // Is the game started
   const [isStarted, setIsStarted] = useState(false);
